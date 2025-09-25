@@ -15,6 +15,8 @@ def user_exists(user):
 def generate_liuid(name, lastname):
     return (name[:3] + lastname[:2]).lower() + str(random.randint(100, 999))
 
+
+
 def make_safe_string(name, lastname):
     # keep only letters from name/lastname
     name = "".join(ch for ch in name if ch.isalpha())
@@ -51,10 +53,10 @@ def get_liuid(fullname):
 
     name, lastname = make_safe_string(name, lastname)
 
-    liuid = generate_liuid(name, lastname)
-
-    while user_exists(liuid):
+    while True:
         liuid = generate_liuid(name, lastname)
+        if not user_exists(liuid):
+            break
 
     return liuid
 
@@ -66,8 +68,6 @@ def create_user(liuid):
 
     password = generate_password()
 
-    #subprocess.run(["echo", "useradd", "-m", "-s", "/bin/bash", liuid])
-    #subprocess.run(["echo", "chpasswd"], input=f"{liuid}:{password}\n", text=True, check=True)
     # subprocess.run(["useradd", "-m", "-s", "/bin/bash", liuid])
     # subprocess.run(["chpasswd"], input=f"{liuid}:{password}\n", text=True, check=True)
 
@@ -81,12 +81,18 @@ def main():
         print("Pleasr enter a list as argument!")
         sys.exit()
 
-    with open(sys.argv[1], "r", encoding="latin-1") as file:
+    with open(sys.argv[1], "r", encoding="utf-8", errors="replace") as file:
         list_of_names = file.readlines()
 
         for name in list_of_names:
+            name = name.strip()
+            if not name:
+                print("Empty name!")
+                continue
+
             liuid = get_liuid(name)
             create_user(liuid)
+
 
 
 if __name__ == "__main__":
