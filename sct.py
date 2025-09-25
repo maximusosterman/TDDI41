@@ -78,8 +78,8 @@ def create_user(liuid):
 
     password = generate_password()
 
-    # subprocess.run(["useradd", "-m", "-s", "/bin/bash", liuid])
-    # subprocess.run(["chpasswd"], input=f"{liuid}:{password}\n", text=True, check=True)
+    subprocess.run(["useradd", "-m", "-s", "/bin/bash", liuid])
+    subprocess.run(["chpasswd"], input=f"{liuid}:{password}\n", text=True, check=True)
 
     print("User created! -> " + liuid )
     print(f"Password for {liuid}: {password}\n")
@@ -102,7 +102,6 @@ def main():
 
             liuid = get_liuid(name)
             create_user(liuid)
-
 
 
 if __name__ == "__main__":
