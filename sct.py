@@ -102,6 +102,19 @@ def main():
 
     args = parse_args()
 
+    confirm = False
+
+    while not confirm and not args.dry_run:
+        print("WARNING: This script is NOT being run in dry_run and will generate acutal users in your system!")
+        user_in = input("Are you sure you want to proceed? [y/n]: ")
+        if user_in.lower() in ["y", "yes"]:
+            confirm = True
+
+        if user_in.lower() in ["n", "no"]:
+            sys.exit(0)
+
+        print("Not valid input!")
+
     if not args.file.exists():
         print(f"Error: file not found: {args.file}", file=sys.stderr)
         sys.exit(1)
