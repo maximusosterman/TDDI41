@@ -61,10 +61,10 @@ def get_liuid(fullname: str) -> str:
         name = splitted_fullname[0]
         lastname = splitted_fullname[-1]
 
-    name, lastname = make_safe_string(name, lastname)
+    safe_name, safe_lastname = make_safe_string(name, lastname)
 
     while True:
-        liuid = generate_liuid(name, lastname)
+        liuid = generate_liuid(safe_name, safe_lastname)
         if not user_exists(liuid):
             break
 
@@ -105,7 +105,7 @@ def main():
     confirm = False
 
     while not confirm and not args.dry_run:
-        print("WARNING: This script is NOT being run in dry_run and will generate acutal users in your system!")
+        print("WARNING: This script is NOT being run in --dry-run flag and will generate acutal users in your system!")
         user_in = input("Are you sure you want to proceed? [y/n]: ")
         if user_in.lower() in ["y", "yes"]:
             confirm = True
