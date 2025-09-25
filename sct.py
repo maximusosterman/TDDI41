@@ -15,18 +15,28 @@ def user_exists(user):
 def generate_liuid(name, lastname):
     return (name[:3] + lastname[:2]).lower() + str(random.randint(100, 999))
 
+def normalize_name(s: str) -> str:
+    """Normalize to lowercase a-z only, mapping å/ä/ö → a."""
+    # Normalize to NFKD (decompose accents)
+    s = unicodedata.normalize("NFKD", s)
 
+    # Replace Swedish letters manually first
+    s = (
+        s.replace("å", "a").replace("Å", "A")
+         .replace("ä", "a").replace("Ä", "A")
+         .replace("ö", "o").replace("Ö", "O")
+    )
+
+    # Encode to ASCII (dropping other diacritics), decode back
+    s = s.encode("ascii", "ignore").decode("ascii")
+
+    # Keep only letters and lowercase
+    return "".join(ch for ch in s.lower() if ch.isalpha())
 
 def make_safe_string(name, lastname):
-    # keep only letters from name/lastname
-    name = "".join(ch for ch in name if ch.isalpha())
-    lastname = "".join(ch for ch in lastname if ch.isalpha())
-
-    # ensure ascii
-    if not name.isascii():
-        name = ""
-    if not lastname.isascii():
-        lastname = ""
+    # normalize
+    name = normalize_name(name)
+    lastname = normalize_name(lastname)
 
     # pad to required length
     if len(name) < 3:
