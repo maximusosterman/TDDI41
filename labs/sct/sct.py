@@ -105,15 +105,16 @@ def main():
     confirm = False
 
     while not confirm and not args.dry_run:
-        print("WARNING: This script is NOT being run in --dry-run flag and will generate acutal users in your system!")
+        print("WARNING: This script is NOT being run with --dry-run flag and will create acutal users in your system!")
         user_in = input("Are you sure you want to proceed? [y/n]: ")
         if user_in.lower() in ["y", "yes"]:
             confirm = True
 
-        if user_in.lower() in ["n", "no"]:
+        elif user_in.lower() in ["n", "no"]:
             sys.exit(0)
 
-        print("Not valid input!")
+        else:
+            print("Not valid input!")
 
     if not args.file.exists():
         print(f"Error: file not found: {args.file}", file=sys.stderr)
