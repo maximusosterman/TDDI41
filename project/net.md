@@ -26,7 +26,7 @@ PING 127.0.0.1 (127.0.0.1) 56(84) bytes of data.
 rtt min/avg/max/mdev = 0.034/0.059/0.090/0.022 ms
 
 
-## <code>ping</code> - [NET.2](https://www.ida.liu.se/~TDDI41/2025/uppgifter/net/index.sv.shtml#net.2)
+## <code>ip</code> - [NET.2](https://www.ida.liu.se/~TDDI41/2025/uppgifter/net/index.sv.shtml#net.2)
 
 1. ifconfig
 2. ip links set ens4 up
@@ -35,7 +35,7 @@ rtt min/avg/max/mdev = 0.034/0.059/0.090/0.022 ms
 
 
 
-## <code>ping</code> - [NET.3](https://www.ida.liu.se/~TDDI41/2025/uppgifter/net/index.sv.shtml#net.3)
+## Nätverkskonfiguration - [NET.3](https://www.ida.liu.se/~TDDI41/2025/uppgifter/net/index.sv.shtml#net.3)
 
 Vi började med att loggain på alla maskiner och öppna nano. Därefter satte vi upp ip-adresser, nätmask och gateway på varje maskin eligt nedan:
 
@@ -49,7 +49,7 @@ iface es3 inet static
 Vi kollade m.h.a "systemctl restart networking" för att kolla så allt stämmde. Sedan testade vi att pinga maskinerna från alla maskiner och testade att skicka meddelanden från klienten till servern via att först öppna upp porten med kommandot "nc -lk -p 4444" och sedan ansluta med vår client med kommadot "nc 10.0.0.2 4444".
 
 
-## <code>ping</code> - [NET.4](https://www.ida.liu.se/~TDDI41/2025/uppgifter/net/index.sv.shtml#net.4)
+## *IP-forwarding och -masquerading* - [NET.4](https://www.ida.liu.se/~TDDI41/2025/uppgifter/net/index.sv.shtml#net.4)
 
 vi loggade in på vår gateway och öppnade nfttables.conf med nano och la till rulesetet: 
 
@@ -63,7 +63,7 @@ table inet nat {
 detta möjligör att vi kan skicka paket från clienten genom routern till nätet. (vi kollade genom att pinga nätet från clienten)
 
 
-## <code>ping</code> - [NET.5](https://www.ida.liu.se/~TDDI41/2025/uppgifter/net/index.sv.shtml#net.5)
+## Justering av värdnamn - [NET.5](https://www.ida.liu.se/~TDDI41/2025/uppgifter/net/index.sv.shtml#net.5)
 Körde kommandot hostnamectl set-hostname client-1.grupp1337.liu.se 
 Sedan editerade filen /etc/hosts med 
 10.0.0.x    client-1.grupp1337.liu.se client 1
@@ -74,31 +74,39 @@ hostname
 hostname -f
 dnsdomainname
 
-## <code>ping</code> - [NET.6](https://www.ida.liu.se/~TDDI41/2025/uppgifter/net/index.sv.shtml#net.6)
+## Brandväggar med <code>nftables</code> - [NET.6](https://www.ida.liu.se/~TDDI41/2025/uppgifter/net/index.sv.shtml#net.6)
 Följande ändringar i /etc/nftabels.conf:
+```conf
 chain input {
         type filter hook input priority 0;
 
-        # Utgår ifrån att all trafik ska släppas, utom den vi tillåter
+        # Utgår ifrån att all trafik ska släppas, utom den vi tillåter. - Deny by default   
         policy drop; 
 
-        # Tillåter loopback
+        # Tillåter loopback. Används för att representera ett internt nätverk i datorn
         iifname "lo" accept 
 
         # Släpper igenom all trafik "som tillhör etablerade konversationer eller kopplingar, och relaterad trafik"
         ct state established,related accept 
 
-        # Tillåter all icmp-trafik
+        # Tillåter all icmp-trafik. Används för att kunna pinga t.ex
         ip protocol icmp accept
 
-        #Tillåter ssh på port 22
+        #Tillåter ssh på port 22 
         ip protocol tcp tcp dport 22 accept
 }
 
 Allt detta gjordes på samtilga maskiner
+```
+[Source: drop](https://serverfault.com/questions/1187259/nftables-default-deny-but-allow-from-separate-tables)
+
+[Source: Loopback](https://wiki.nftables.org/wiki-nftables/index.php/Simple_ruleset_for_a_server)
+
+[Source: established,related & ICMP](https://bbs.archlinux.org/viewtopic.php?id=238422)
+
+[Source: SSH](https://stackoverflow.com/questions/68622404/nftables-don%C2%B4t-allow-ssh)
 
 
-
-## <code>ping</code> - [NET.6](https://www.ida.liu.se/~TDDI41/2025/uppgifter/net/index.sv.shtml#net.7)
+## Testning av nätverkskonfiguration - [NET.7](https://www.ida.liu.se/~TDDI41/2025/uppgifter/net/index.sv.shtml#net.7)
 
 
