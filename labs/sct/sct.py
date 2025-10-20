@@ -7,6 +7,18 @@ import unicodedata
 import argparse
 from pathlib import Path
 
+
+class UserAddError(Exception):
+    pass
+
+class UserAlreadyExists(UserAddError):
+    pass
+
+class PasswordChangeError(Exception):
+    pass
+
+Exception
+
 def user_exists(user: str) -> bool:
     result = subprocess.run(
         ["getent", "passwd", user], capture_output=True, text=True
@@ -16,6 +28,7 @@ def user_exists(user: str) -> bool:
 
 def generate_liuid(name: str, lastname: str) -> str:
     return (name[:3] + lastname[:2]).lower() + str(random.randint(100, 999))
+
 
 def normalize_name(s: str) -> str:
     """Normalize to lowercase a-z only, mapping å/ä/ö → a."""
@@ -34,6 +47,7 @@ def normalize_name(s: str) -> str:
 
     # Keep only letters and lowercase
     return "".join(ch for ch in s.lower() if ch.isalpha())
+
 
 def make_safe_string(name: str, lastname: str) -> tuple[str, str]:
     # normalize
@@ -64,9 +78,15 @@ def get_liuid(fullname: str) -> str:
     safe_name, safe_lastname = make_safe_string(name, lastname)
 
     while True:
-        liuid = generate_liuid(safe_name, safe_lastname)
-        if not user_exists(liuid):
-            break
+
+        try:
+            liuid = generate_liuid(safe_name, safe_lastname)
+            if not user_exists(liuid):
+                break
+
+        except:
+            liuid = generate_liuid(safe_name, safe_lastname)
+
 
     return liuid
 
@@ -74,20 +94,39 @@ def get_liuid(fullname: str) -> str:
 def generate_password() -> str:
     return "".join(random.choice(string.ascii_letters) for _ in range(8))
 
+
 def create_user(liuid: str, password: str, dry_run: bool = False) -> None:
 
     if dry_run:
             print(f"[DRY-RUN] useradd -m -s /bin/bash {liuid}")
             print(f"[DRY-RUN] echo '{liuid}:{password}' | chpasswd")
             return
-
-    subprocess.run(
-        ["useradd", "-m", "-s", "/bin/bash", liuid]
+        
+    # Addning user
+    result = subprocess.run(
+        ["useradd", "-m", "-s", "/bin/bash", liuid],
+        capture_output=True,
+        check=True
     )
-    subprocess.run(
+    
+    if result.returncode != 0:
+        stderr = result.stderr.strip()
+        if "already exists" in stderr:
+            raise UserAlreadyExists(stderr)
+        else:
+            raise UserAddError(stderr)
+
+    # Password change
+    result = subprocess.run(
         ["chpasswd"],
         input=f"{liuid}:{password}\n",
-        text=True, check=True)
+        text=True, 
+        check=True
+    )
+
+    if result.returncode != 0:
+        stderr = result.stderr.strip()
+        raise PasswordChangeError(stderr)
 
     return
 
@@ -131,9 +170,28 @@ def main():
 
             liuid = get_liuid(name)
             password = generate_password()
-            create_user(liuid, password, args.dry_run)
-            print("Input name: " + name)
-            print(f"User created! -> {liuid} | Password: {password}\n")
+
+
+            while True:
+                try:
+                    create_user(liuid, password, args.dry_run)
+                    print("Input name: " + name)
+                    print(f"User created! -> {liuid} | Password: {password}\n")
+                    break
+
+                except UserAlreadyExists:
+                    print(f"{liuid} already exits! Generating a new one, trying again...")
+                    liuid = get_liuid(name)
+
+                except UserAddError as e:
+                    print(f"Unexcpected error! Failed to create {liuid}: {e}")
+                    break
+
+                except PasswordChangeError as e:
+                    print(f"Unexpected error! Failed to change password {liuid}: {e}")
+                    break
+
+            
 
 if __name__ == "__main__":
     main()
