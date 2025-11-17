@@ -21,3 +21,26 @@ Dessutom får man även en summering på vad man har skickat  mer för queries, 
 - SOA innehåller metadata för hela zoenen
 
 3. Med +trace plus använder man sig av manuell rekursion. Man får ta del av varje steg. Från Rootservar till att man hittar ip:n för google. Man får se vilka NS som hanterar .com, sen från alla .com till alla googles servar där man hittar slutgiltiga ip:n
+
+
+## <code>dig</code> - [DNS.3](https://www.ida.liu.se/~TDDI41/2025/uppgifter/dns/#dns.3)
+1. vi sätter upp vår DNS-server till google:s offentliga DNS-server eftersom den är snabb, stabil och gratis att använda. Detta görs genom att lägga till raden "dns-nameservers " i vår 
+/etc/network/interfaces fil på servern och clientena.  
+
+2. En SOA-post beskriver vem som ansvarar för zonen och hur den ska synkas till primära och sekundära namnservrar. De olika fälten är:
+
+- Primära NS: zonens master-server. 
+- Responsible person: Kontakt-adress. 
+- Serial: Verisionsnummer för zonen.
+- Refresh: Hur ofta sekundärer frågar efter uppdateringar
+- Retry: Hur ofta sekundärer försöker igen vid nätverksproblem
+- Expire: hur länge sekundäerer får användad gammal zon innan allt stängs
+- minimum TTL: 
+
+För att sätta upp egen auktoritet för vår zon hämtade vi bind9 på clienterna och servern. Därefer skapade vi filen mainzone.db som ligger i vår bind mapp. Vi satte upp vad zonen skulle ha för konfigrueringar (refresh, TTL, expire osv). För att alla maskinnamn skulle kunna kopplas till rätt ip modifierade vi filen named.conf.local där vi sätter mainzone.lab till master. Anakin(client-1) slicar mace windu(routern) och inser att palpatine(servern) är den sanna mästaren. 
+- [Hur det utspelar sig ](https://www.youtube.com/watch?v=O8QSTzWhvG0&pp=ygUQbWFjZSB3aW5kdSBkaWVzIA%3D%3D)
+- [hur client-1 beter sig](https://www.google.com/url?sa=t&source=web&rct=j&opi=89978449&url=https://www.youtube.com/watch%3Fv%3D6lg31YxfD7k&ved=2ahUKEwjd8b7e_fGQAxX7OBAIHT6wPKkQtwJ6BAgQEAI&usg=AOvVaw3Agi4TLfVyrmMqRV6vB9jj) 
+- [serverns respons](https://www.youtube.com/watch?v=EzfkxAC-Bw8&pp=ygUOZ29vZCBwYWxwYXRpbmXSBwkJCAoBhyohjO8%3D)
+
+Sedan gick vi in i filen named.conf.options där vi tillåter slagning, frågeställning, och att localhost och servern är masters och vi ska lyssna på dem. För att sätta upp reverse dns skapade vi filen db.10.0.0 och vi använder oss av ungeför samma konfigruering som i named.conf.options men lägger till PTR records som möjliggör för reverse dns för maskinernas ip-adresser. 
+
