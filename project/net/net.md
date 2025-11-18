@@ -109,16 +109,25 @@ Allt detta gjordes på samtilga maskiner
 
 ## Testning av nätverkskonfiguration - [NET.7](https://www.ida.liu.se/~TDDI41/2025/uppgifter/net/index.sv.shtml#net.7)
 
+REQIUREMENTS.txt
+netifaces
+
 ```python
 
 import pytest
 import subprocess
+import netifaces as ni
+
+ROUTER_IP = "10.0.0.1"
+CURR_HOSTNAME = "client-1"
+CURR_IP = "10.0.0.3"
+NETMASK = "255.255.255.0"
+INTERFACE_NAME = "ens3"
+SSH_PORT = "22"
 
 def test_name():
 
-    current_host = "vippan-107.ad.liu.se"
-
-    result = subprocess.run(f"hostname | grep {current_host}",
+    result = subprocess.run(f"hostname | grep {CURR_HOSTNAME}",
                 check=True,
                 capture_output=True,
                 shell=True
@@ -126,39 +135,44 @@ def test_name():
     
     assert result.returncode == 0
 
+def test_can_reach_router():
+
+    result = subprocess.run(f"ping -c 1 -w 5 {ROUTER_IP}",
+                   check=True,
+                   capture_output=True,
+                   shell=True
+                )
+    
+    assert result.returncode == 0
+
+
 def test_can_reach():
 
-    ip_list = ["google.com", "10.0.2.2"]
+    ip_list = ["google.com", "10.0.2.2", CURR_IP, "10.0.0.3"]
 
     for ip in ip_list:
+        if CURR_IP == ip : continue 
         result = subprocess.run(f"ping -c 1 -w 5 {ip}", check=True, capture_output=True, shell=True)
         assert result.returncode == 0
 
+
+def get_ip(iface):
+    return ni.ifaddresses(iface)[ni.AF_INET][0]['addr']
+
+
+def get_netmask(iface):
+    return ni.ifaddresses(iface)[ni.AF_INET][0]['netmask']
+        
 def test_correct_ip():
-
-    correct_ip = "10.0.0.1"
-
-    result = subprocess.check_output(f"hostname -i",
-                            text=True,
-                            shell=True
-                        ).strip()
-    
-    assert result == correct_ip
+    assert CURR_IP == get_ip(INTERFACE_NAME)
 
 def test_correct_netmask():
+    assert NETMASK == get_netmask(INTERFACE_NAME)
 
-    correct_netmask = "24"
-
-    result = subprocess.check_output("ip addr show dev ens3 | grep inet -m 1 | awk '{print $2}'",
-                                    text=True,
-                                    shell=True
-                                )
-
-    assert result.split("/")[1].strip() == correct_netmask
 
 def test_correct_gateway():
 
-    correct_gateway = "10.0.0.1"
+    correct_gateway = "10.0.0.0"
 
     result = subprocess.check_output("ip route",
                                     text=True,
@@ -167,36 +181,17 @@ def test_correct_gateway():
 
     assert correct_gateway in result
 
-def test_if_ip_forwarding_enabled():
-    result = subprocess.check_output("cat /proc/sys/net/ipv4/ip_forward",
-                                    text=True,
-                                    shell=True     
-                                ).strip()
-    
-    assert result == "1"
+def test_icmp_inbound_to_client1():
+    result = subprocess.run(
+        ["ping", "-c", "1", "-W", "3", "10.0.0.3"],
+        capture_output=True
+    )
+    assert result.returncode == 0
 
-def test_masquerading():
-    result = subprocess.run("nft list ruleset", check=True, capture_output=True, shell=True, text=True)
+def test_client1_ssh_port_open():
+    result = subprocess.run(f"nc -vz {CURR_IP} {SSH_PORT}", capture_output=True, shell=True)
 
-    assert 'oifname "ens3" masquerade' in result.stdout.strip()
-    
-
-
-def main():
-    test_correct_ip()
-    test_correct_netmask()
-    test_correct_gateway()
-    
-    test_name()
-    
-    test_can_reach()
-
-    test_if_ip_forwarding_enabled()
-
-    test_masquerading()
-
-if __name__ == "__main__":
-    main()  
+    assert result.returncode == 0 
 
 ```
 
