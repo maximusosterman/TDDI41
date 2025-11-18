@@ -1,0 +1,16 @@
+import pytest
+import subprocess
+
+SERVER_IP   = "10.0.0.2"
+ZONE_NAME    = "mainzone.lab"
+
+def test_nameserver_soa():
+    result = subprocess.check_output(
+        f"dig @{SERVER_IP} {ZONE_NAME} SOA +noall +answer",
+        text=True,
+        shell=True
+    ).strip()
+
+    assert ZONE_NAME in result
+    assert "SOA" in result
+    assert "ns1.{ZONE_NAME}" in result

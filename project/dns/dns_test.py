@@ -2,16 +2,21 @@ import pytest
 import subprocess
 
 CURR_IP     = "10.0.0.3"
+CURR_NAME   = "client-1"
 SERVER_IP   = "10.0.0.2"
+ZONE_NAME    = "mainzone.lab"
 
-def test_nameserver():
+def test_nameserver_soa():
+    result = subprocess.check_output(
+        f"dig @{SERVER_IP} {ZONE_NAME} SOA +noall +answer +time=1 +tries=1",
+        text=True,
+        shell=True
+    ).strip()
 
-    result = subprocess.check_output(f"cat /etc/resolv.conf",
-                            text=True,
-                            shell=True
-                        ).strip()
-    
-    assert result == SERVER_IP
+    assert ZONE_NAME in result
+    assert "SOA" in result
+    assert f"ns1.{ZONE_NAME}" in result
+
 
 def test_bind9_is_active():
     result = subprocess.run(
@@ -40,13 +45,13 @@ def dig(name, server=None):
     return subprocess.run(cmd, capture_output=True, text=True, check=False)
 
 def test_zone_has_correct_records():
-    res = dig("server.mainzone.lab", SERVER_IP)
+    res = dig(f"{CURR_NAME}.{ZONE_NAME}", SERVER_IP)
 
     assert SERVER_IP in res.stdout
 
 def test_zone_is_authoritative():
     res = subprocess.run(
-        ["dig", f"@{SERVER_IP}", "mainzone.lab", "SOA", "+cmd"],
+        ["dig", f"@{SERVER_IP}", ZONE_NAME, "SOA", "+cmd"],
         capture_output=True,
         text=True
     )
@@ -76,4 +81,4 @@ def test_client1_uses_internal_dns():
 def test_reverse_dns():
     res = subprocess.run(["dig", f"@{SERVER_IP}", "-x", CURR_IP, "+short"],
         capture_output=True, text=True)
-    assert "server.mainzone.lab." in res.stdout
+    assert f"server.{ZONE_NAME}." in res.stdout
